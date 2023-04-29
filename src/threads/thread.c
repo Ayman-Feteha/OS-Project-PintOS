@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/fixed_point.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -19,6 +20,8 @@
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
+
+fixed_point_t load_avg = TO_FIXED_POINT(0);
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -98,6 +101,10 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+      //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+
+  initial_thread -> nice = 0;
+  initial_thread -> recent_cpu = TO_FIXED_POINT(0);
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -335,6 +342,9 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  if (thread_mlfqs)
+  return;
+
   thread_current ()->priority = new_priority;
 }
 
@@ -342,39 +352,124 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void) 
 {
+
   return thread_current ()->priority;
 }
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+
+/*Update Priority for Advanced*/
+int adv_sch_update_priority (fixed_point_t recent_cpu, int nice )
+{ 
+   // Calculate priority using fixed-point arithmetic
+// priority = PRI_MAX - (recent_cpu / 4) - (nice * 2).
+fixed_point_t priority_fp = SUBTRACT(SUBTRACT(PRI_MAX << FIXED_POINT_SHIFT, DIVIDE_INTEGER(recent_cpu, 4)), MULTIPLY_INTEGER(nice, 2));
+// Convert fixed-point priority to integer using rounding-to-nearest
+int priority = TO_INTEGER_NEAREST(priority_fp);
+if (priority < PRI_MIN)
+{
+  priority =PRI_MIN;
+}
+else if (priority > PRI_MAX)
+{
+  priority = PRI_MAX;
+}
+
+  return priority;
+  }
 
 /* Sets the current thread's nice value to NICE. */
+
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+
 void
 thread_set_nice (int nice UNUSED) 
 {
   /* Not yet implemented. */
+
+  thread_current() -> nice = nice;
+  thread_current () -> priority = adv_sch_update_priority(thread_current()-> recent_cpu, thread_current()-> nice);
+  thread_yield();
+  
 }
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
   /* Not yet implemented. */
-  return 0;
+  
+  return thread_current() -> nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return TO_INTEGER_NEAREST(MULTIPLY_INTEGER(load_avg, 100)); ///////////////////// to be inti
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+
+    return TO_INTEGER_NEAREST (MULTIPLY_INTEGER(thread_current()->recent_cpu, 100));
+
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+
 }
+ // Increment the recent cpu by 1
+void adv_sch_inc_recent_cpu()
+{
+  intr_disable();
+  if (thread_current() != idle_thread )
+  {
+    thread_current() ->recent_cpu = ADD_INTEGER(thread_current()->recent_cpu, 1);
+  }
+  intr_enable();
+}
+
+void adv_sch_update_recent_cpu_and_load_avg()
+{
+  size_t ready_threads = list_size (&ready_list);
+   // Calculate the updated value of load_avg
+  // load_avg = (59/60)*load_avg + (1/60)*ready_threads.
+
+  /* #define COEFF_1 INT_TO_FIXED_POINT(59) / 60
+#define COEFF_2 INT_TO_FIXED_POINT(1) / 60*/
+///////////////////////////////////////////////// check idle  TO DOOOOOOOOOOOOOOOOO /////////////////////////
+load_avg = ADD(MULTIPLY(COEFF_1, load_avg), MULTIPLY_INTEGER(COEFF_2, ready_threads));
+
+ 
+for(struct list_elem* iter = list_begin(&all_list);
+iter != list_end(&all_list);
+iter = list_next(iter))
+
+{  // recent_cpu = (2*load_avg)/(2*load_avg + 1) * recent_cpu + nice.
+  struct thread *t = list_entry (iter, struct thread, allelem);
+  intr_disable();
+    if (thread_current() != idle_thread)
+    {
+      t-> recent_cpu = TO_INTEGER_NEAREST(
+    ADD_INTEGER( MULTIPLY(
+        DIVIDE(
+            MULTIPLY_INTEGER(load_avg, 2),
+            ADD_INTEGER(MULTIPLY_INTEGER(load_avg, 2), 1)),t->recent_cpu), t->nice));
+
+    t->priority = adv_sch_update_priority(t->recent_cpu, t->nice);
+
+    }
+      intr_enable();
+
+   
+
+}
+
+}
+
 
 /* Idle thread.  Executes when no other thread is ready to run.
 
@@ -456,6 +551,12 @@ init_thread (struct thread *t, const char *name, int priority)
   ASSERT (t != NULL);
   ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
   ASSERT (name != NULL);
+
+      //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+      ///////////////////////////////////////////* Inhirit *///////////////////////////////////////////////
+
+  t->nice = 0;
+  t->recent_cpu = TO_FIXED_POINT(0);
 
   memset (t, 0, sizeof *t);
   t->status = THREAD_BLOCKED;
