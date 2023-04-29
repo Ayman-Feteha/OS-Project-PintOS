@@ -337,14 +337,12 @@ thread_set_priority (int new_priority)
 {
   thread_current ()->original_priority = new_priority;
   thread_current ()->priority = new_priority;
-  thread_current ()->donated = false;
 
   /* Handle priority donation */
   if (!list_empty(&thread_current ()->donations)) {
       struct thread *t = list_entry(list_front(&thread_current ()->donations),struct thread, donation_elem);
       if (t->priority >= new_priority) {
           thread_current ()->priority = t->priority;
-          thread_current ()->donated = true;
       }
   }
 
