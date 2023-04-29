@@ -1,7 +1,7 @@
 
     //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
 //test 
-// test2
+
 #ifndef FIXED_POINT_ARITHMETIC_H
 #define FIXED_POINT_ARITHMETIC_H
 
