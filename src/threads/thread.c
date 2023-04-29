@@ -335,17 +335,16 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  struct thread *current = thread_current();
-  current->original_priority = new_priority;
-  current->priority = new_priority;
-  current->donated = false;
+  thread_current ()->original_priority = new_priority;
+  thread_current ()->priority = new_priority;
+  thread_current ()->donated = false;
 
   /* Handle priority donation */
-  if (!list_empty(&current->donations)) {
-      struct thread *t = list_entry(list_front(&current->donations),struct thread, donation_elem);
+  if (!list_empty(&thread_current ()->donations)) {
+      struct thread *t = list_entry(list_front(&thread_current ()->donations),struct thread, donation_elem);
       if (t->priority >= new_priority) {
-          current->priority = t->priority;
-          current->donated = true;
+          thread_current ()->priority = t->priority;
+          thread_current ()->donated = true;
       }
   }
 
