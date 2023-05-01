@@ -92,6 +92,12 @@ struct thread
     int64_t thread_wakeup_ticks;    /* # of timer ticks that thread need to wake up . */
    //  struct sleeping_threads;
 
+
+    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+    int nice;
+    fixed_point_t recent_cpu ;
+      //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
@@ -142,5 +148,10 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+     //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+int adv_sch_update_priority (fixed_point_t recent_cpu, int nice );
+void adv_sch_inc_recent_cpu(void);
+void adv_sch_update_recent_cpu_and_load_avg(void);
+
 
 #endif /* threads/thread.h */
