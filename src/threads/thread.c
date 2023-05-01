@@ -70,6 +70,7 @@ static void idle (void *aux UNUSED);
 static struct thread *running_thread (void);
 static struct thread *next_thread_to_run (void);
 static void init_thread (struct thread *, const char *name, int priority);
+bool thread_less_func(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 static bool is_thread (struct thread *) UNUSED;
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
@@ -136,6 +137,7 @@ thread_less_func(const struct list_elem *a, const struct list_elem *b, void *aux
 void
 thread_sleep(int64_t sleep_ticks)
 {
+
   struct thread *t = thread_current ();
 
   t->thread_wakeup_ticks = sleep_ticks;
@@ -146,10 +148,10 @@ thread_sleep(int64_t sleep_ticks)
 
   old_level = intr_disable();
   
+  list_insert_ordered(&sleep_list, &t->elem, thread_less_func, NULL);
+
   thread_block();
 
-  list_insert_ordered(&sleep_list, &t->elem, thread_less_func, NULL);
-  
   intr_set_level(old_level);
   
 }
@@ -158,14 +160,17 @@ void
 waking_up_thread(int64_t ticks)
 {
     struct list_elem *iter = list_begin(&sleep_list);
+    
     while (iter != list_end(&sleep_list)) {
-        struct thread *entry = list_entry(iter,
-        struct thread, elem);
-        iter = list_next(iter);
-        if (entry->thread_wakeup_ticks <= ticks) {
-            list_pop_front(&sleep_list);
-            thread_unblock(entry);
-        } else break;
+      
+
+      struct thread *entry = list_entry(iter,
+      struct thread, elem);
+      iter = list_next(iter);
+      if (entry->thread_wakeup_ticks <= ticks) {
+          list_pop_front(&sleep_list);
+          thread_unblock(entry);
+      } else break;
     }
 }
 
