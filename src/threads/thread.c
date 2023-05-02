@@ -300,7 +300,9 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  //$$$$$$$$$$$$$Nada$$$$$$$$
+  list_insert_ordered (&ready_list, &t->elem, compare_priority, NULL);
+
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -366,12 +368,18 @@ thread_yield (void)
 {
   struct thread *cur = thread_current ();
   enum intr_level old_level;
-  
+  struct list_elem *a = list_begin(&sleep_list);
+  int highest_ready_thread_priorty=list_entry(a,struct thread,elem)->priority;
+
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+  {
+    if(cur->priority < highest_ready_thread_priorty)
+    list_insert_ordered (&ready_list, &cur->elem, compare_priority, NULL);
+  }
+    
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -423,6 +431,19 @@ thread_get_priority (void)
 
   return thread_current ()->priority;
 }
+
+//$$$$$$$$$$$Nada$$$$$$$$$$$
+//this function compares between two threads A & B if A>B returns true
+bool compare_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
+{
+  struct thread *thread_a = list_entry(a, struct thread, elem);
+  struct thread *thread_b = list_entry(b, struct thread, elem);
+  return thread_a->priority > thread_b->priority;
+}
+
+
+
+
     //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
 
 /*Update Priority for Advanced*/
