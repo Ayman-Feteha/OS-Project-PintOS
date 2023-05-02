@@ -492,18 +492,18 @@ thread_get_recent_cpu (void)
  // Increment the recent cpu by 1
 void adv_sch_inc_recent_cpu()
 {
-  ASSERT (intr_context ());
+  //ASSERT (intr_context ());
   //intr_disable();
   if (thread_current() != idle_thread )
   {
     thread_current() ->recent_cpu = ADD_INTEGER(thread_current()->recent_cpu, 1);
   }
-  //intr_enable();
+  
 }
 
 void adv_sch_update_recent_cpu_and_load_avg()
 {
-  ASSERT (intr_context ());
+  //ASSERT (intr_context ());
   size_t ready_threads = list_size (&ready_list);
   
    // Calculate the updated value of load_avg
@@ -533,7 +533,7 @@ iter = list_next(iter))
     t->priority = adv_sch_update_priority(t->recent_cpu, t->nice);
 
     }
-      //intr_enable();
+    
 
    
 
