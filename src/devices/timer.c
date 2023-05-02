@@ -180,18 +180,18 @@ timer_interrupt (struct intr_frame *args UNUSED)
   thread_tick ();
       //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
 
-  if (thread_mlfqs )
-  {
-    adv_sch_inc_recent_cpu();
-    if(ticks % TIMER_FREQ == 0)
-    {
-      adv_sch_update_recent_cpu_and_load_avg();
-    }
-    if(ticks % 4 == 0)
-    {
-      adv_sch_update_priority(thread_current()->recent_cpu, thread_current()->nice);
-    }
-  }
+  // if (thread_mlfqs )
+  // {
+  //   adv_sch_inc_recent_cpu();
+  //   if(ticks % TIMER_FREQ == 0)
+  //   {
+  //     adv_sch_update_recent_cpu_and_load_avg();
+  //   }
+  //   if(ticks % 4 == 0)
+  //   {
+  //     adv_sch_update_priority(thread_current()->recent_cpu, thread_current()->nice);
+  //   }
+  // }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer

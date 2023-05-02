@@ -152,9 +152,9 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
      //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
-int adv_sch_update_priority (fixed_point_t recent_cpu, int nice );
-void adv_sch_inc_recent_cpu(void);
-void adv_sch_update_recent_cpu_and_load_avg(void);
+// int adv_sch_update_priority (fixed_point_t recent_cpu, int nice );
+// void adv_sch_inc_recent_cpu(void);
+// void adv_sch_update_recent_cpu_and_load_avg(void);
 
 
 #endif /* threads/thread.h */
