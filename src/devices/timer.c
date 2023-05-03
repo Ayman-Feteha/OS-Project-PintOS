@@ -7,7 +7,7 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
-  
+
 /* See [8254] for hardware details of the 8254 timer chip. */
 
 #if TIMER_FREQ < 19
@@ -89,16 +89,26 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
+  /*
+  int64_t start = timer_ticks();
+  while (timer_elapsed(start) < ticks)
+    thread_yield();
+  */
+  /*Start modyfing*/
+  /* if the given ticks are less than or equal zero then return */
+  
+  if (ticks <= 0) return;
 
   ASSERT (intr_get_level () == INTR_ON);
-  // while (timer_elapsed (start) < ticks) 
-  //   thread_yield ();
-  int64_t wake_up_time = ticks + start;
-  thread_sleep(wake_up_time);
+  enum intr_level old_level = intr_disable();
 
+  /* Blocks current thread for ticks */
+  thread_current()->ticks_to_sleep = ticks;
+  thread_block();
+
+  intr_set_level(old_level);
 }
-
+/*Done modyfing*/
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
    turned on. */
 void
@@ -173,25 +183,22 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+  
+  thread_foreach(checking_sleeping_time, NULL);
+
   ticks++;
 
-  waking_up_thread(ticks);
-
   thread_tick ();
-      //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
 
-  // if (thread_mlfqs )
-  // {
-  //   adv_sch_inc_recent_cpu();
-  //   if(ticks % TIMER_FREQ == 0)
-  //   {
-  //     adv_sch_update_recent_cpu_and_load_avg();
-  //   }
-  //   if(ticks % 4 == 0)
-  //   {
-  //     adv_sch_update_priority(thread_current()->recent_cpu, thread_current()->nice);
-  //   }
-  // }
+  /* Solution Code */
+  if (thread_mlfqs)
+  {
+    mlfqs_inc_recent_cpu();
+	if (ticks % TIMER_FREQ == 0)
+	  mlfqs_update_load_avg_and_recent_cpu();
+	else if (ticks % 4 == 0)
+	  mlfqs_update_priority(thread_current());
+  }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
