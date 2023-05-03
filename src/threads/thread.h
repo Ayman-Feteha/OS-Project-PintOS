@@ -102,7 +102,10 @@ struct thread
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
-
+// Do7a
+   struct list_elem donated_priorities; 
+   struct lock *waiting_on;
+// Do7a
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */

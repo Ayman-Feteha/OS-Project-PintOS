@@ -211,6 +211,22 @@ lock_acquire (struct lock *lock)
   lock->holder = thread_current ();
 
   intr_set_level (old_level);
+/*//Do7a
+  // Add a variable to store the current thread's priority.
+  struct thread *t = thread_current();
+  int original_priority = t->priority;
+
+  // If the lock is not available, donate the current thread's priority to the holder of the lock.
+  if (lock->holder != NULL) {
+    list_push_back(&lock->holder->donated_priorities, &t->elem);
+    t->priority = original_priority;
+  }
+
+  // If the holder of the lock is waiting on another lock, recursively donate that lock's priority.
+  if (lock->holder->waiting_on != NULL) {
+    lock_acquire(lock->holder->waiting_on);
+  }
+  //Do7a*/
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -251,6 +267,20 @@ lock_release (struct lock *lock)
   sema_up (&lock->semaphore);
 
   intr_set_level (old_level);
+  /*//Do7a
+  struct thread *t = thread_current();
+  // Remove the thread that holds the lock on donation list.
+  list_remove(&t->elem);
+
+  // Reset the thread's priority based on the highest priority it has received from all of its donors.
+    t->priority = t->original_priority;
+  for (struct list_elem *e = list_begin(&t->donated_priorities); e != list_end(&t->donated_priorities); e = list_next(e)) {
+    struct thread *donor = list_entry(e, struct thread, elem);
+    if (donor->priority > t->priority) {
+      t->priority = donor->priority;
+    }
+  }
+  //Do7a*/
 }
 
 /* Returns true if the current thread holds LOCK, false

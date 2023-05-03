@@ -423,6 +423,19 @@ struct thread *current_thread = thread_current();
   // Update the priority value of the thread.
   current_thread->priority = new_priority;
 
+ /* //Do7a
+    // Set the thread's priority considering the donation.
+  if (new_priority > current_thread->priority) {
+    current_thread->priority = new_priority;
+    for (struct list_elem *e = list_begin(&current_thread->donated_priorities); e != list_end(&current_thread->donated_priorities); e = list_next(e)) {
+      struct thread *donor = list_entry(e, struct thread, elem);
+      if (donor->priority > current_thread->priority) {
+        current_thread->priority = donor->priority;
+      }
+    }
+  }
+  //Do7a
+*/
   // If the new priority is lower than the old priority, check if the thread should yield the CPU.
   if( new_priority <= old_priority)
 
@@ -657,6 +670,12 @@ init_thread (struct thread *t, const char *name, int priority)
   // t->nice = 0;
   // t->recent_cpu = TO_FIXED_POINT(0);
 
+  //Do7a
+  /*list to keep track of threads that have donated their priority to this thread*/ 
+  list_init(&t->donated_priorities);
+  // Initialize the thread's waiting_on field. 
+  t->waiting_on = NULL;
+  //Do7a
   memset (t, 0, sizeof *t);
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
