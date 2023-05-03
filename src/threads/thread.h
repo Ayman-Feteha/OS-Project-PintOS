@@ -92,8 +92,9 @@ struct thread
     int original_priority;              /* stores the original Priority when donation. */
     struct list_elem allelem;           /* List element for all threads list. */
     int64_t thread_wakeup_ticks;    /* # of timer ticks that thread need to wake up . */
-   //  struct sleeping_threads;
-
+    struct lock *required_lock;   /*this is the lock needed by the tread to enter a critical section*/
+    struct list donors_list;     
+    struct list_elem donors_elem;
 
     //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
     int nice;
@@ -130,6 +131,9 @@ void thread_block (void);
 void thread_unblock (struct thread *);
 void thread_sleep(int64_t sleep_ticks);
 void waking_up_thread(int64_t ticks);
+void donate_priority (void);
+void is_cur_max_priority (void);
+
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);

@@ -25,7 +25,7 @@ fixed_point_t load_avg = TO_FIXED_POINT(0);
 // Define fixed-point constants for the coefficients
 #define COEFF_1 DIVIDE_INTEGER(TO_FIXED_POINT(59) , 60)
 #define COEFF_2 DIVIDE_INTEGER(TO_FIXED_POINT(1) , 60)
-
+#define DONATION_MAX_DEPTH 8
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -103,7 +103,8 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-   list_init(&sleep_list);
+  list_init(&sleep_list);
+  
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -403,35 +404,92 @@ thread_foreach (thread_action_func *func, void *aux)
       func (t, aux);
     }
 }
+void 
+is_cur_max_priority (void)
+{
+  enum intr_level old_level = intr_disable ();
+  /* If the ready_list is empty, there is no need to check. */
+  if (list_empty (&ready_list)) ;
+  else {
+    struct thread *t = list_entry(list_front (&ready_list),
+          struct thread, elem);
+    if (thread_current ()->priority < t->priority) {
+      thread_yield ();
+    }
+  }
+  intr_set_level (old_level);
+}
+void 
+donate_priority (void)
+{
+  struct thread *t = thread_current ();
+  struct lock *l = t->required_lock;
+  int i = 0;
+  for (i; l != NULL && i != DONATION_MAX_DEPTH ; i++)
+  {
+    /* If the lock is free, do nothing and return. */
+    if (l->holder == NULL) return;
+    if (l->holder->priority < t->priority) {
+      /* Donate it and do recursion. */ 
+      l->holder->priority = t->priority;
+      t = l->holder;
+      l = t->required_lock;
+    } else {
+      return;
+    }
+  }
+}
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) 
 {
-  if (thread_mlfqs)
-  return;
-
-struct thread *current_thread = thread_current();
-  
-  int old_priority = current_thread->priority;
-  
-  struct list_elem *a = list_begin(&sleep_list);
-
-  int highest_ready_thread_priorty=list_entry(a,struct thread,elem)->priority;
-
-
-  // Update the priority value of the thread.
-  current_thread->priority = new_priority;
-
-  // If the new priority is lower than the old priority, check if the thread should yield the CPU.
-  if( new_priority <= old_priority)
-
-  {
-    thread_yield();
+  if (new_priority == thread_current ()->priority) return;
+  enum intr_level old_level = intr_disable ();
+  int old_priority = thread_current ()->priority;
+  /* The line below is important. I missed it and paid for it... */
+  thread_current ()->original_priority = new_priority;
+  thread_current ()->priority = new_priority;
+  /* Redo the donation (be donee) before it tries to donate (be donor). */
+  if (!list_empty (&thread_current ()->donors_list)) {
+    struct thread *donor_with_max_priority = list_entry (list_front (&thread_current ()->donors_list), struct thread, donors_elem);
+    if (thread_current ()->priority < donor_with_max_priority->priority)
+      thread_current ()->priority = donor_with_max_priority->priority;
   }
+  if (new_priority < old_priority)
+    /* If the new priority is less than the old one, check whether it should yield. */
+    is_cur_max_priority ();
+  else
+    /* If the new priority is greater than the old one, try to donate it. */
+    donate_priority ();
+  intr_set_level (old_level);
+}
+
+// {
+//   if (thread_mlfqs)
+//   return;
+
+// struct thread *current_thread = thread_current();
+  
+//   int old_priority = current_thread->priority;
+  
+//   struct list_elem *a = list_begin(&sleep_list);
+
+//   int highest_ready_thread_priorty=list_entry(a,struct thread,elem)->priority;
+
+
+//   // Update the priority value of the thread.
+//   current_thread->priority = new_priority;
+
+//   // If the new priority is lower than the old priority, check if the thread should yield the CPU.
+//   if( new_priority <= old_priority)
+
+//   {
+//     thread_yield();
+//   }
 
   
-}
+// }
 
 /* Returns the current thread's priority. */
 int
@@ -662,8 +720,10 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  t->original_priority=priority;
+  t->required_lock=NULL;
   t->magic = THREAD_MAGIC;
-
+  list_init(&t->donors_list);
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
