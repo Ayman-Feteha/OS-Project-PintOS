@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+/* Solution Code */
 #include "threads/fixed_point.h"
 
 /* States in a thread's life cycle. */
@@ -89,17 +90,15 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
-    int original_priority;              /* stores the original Priority when donation. */
     struct list_elem allelem;           /* List element for all threads list. */
-    int64_t thread_wakeup_ticks;    /* # of timer ticks that thread need to wake up . */
-    struct lock *required_lock;   /*this is the lock needed by the tread to enter a critical section*/
-    struct list donors_list;     
-    struct list_elem donors_elem;
 
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
-    int nice;
-    fixed_point_t recent_cpu ;
-      //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
+    /* Solution Code */
+    int64_t ticks_to_sleep;              /* Ticks that the thread need to be blocked. */
+    int original_priority;                  /* Used to record thread's priority when it's not being donated. */
+    struct list locks_holding;          /* List of locks the thread is holding. */
+    struct lock *required_lock;         /* The lock the thread is waiting for. */
+    int nice;                           /* Nice value. */
+    fixed_t recent_cpu;                 /* Recent CPU. */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -118,6 +117,9 @@ struct thread
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
 
+/* Solution Code */
+void checking_sleeping_time(struct thread *t, void *aux UNUSED);
+
 void thread_init (void);
 void thread_start (void);
 
@@ -129,11 +131,6 @@ tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
-void thread_sleep(int64_t sleep_ticks);
-void waking_up_thread(int64_t ticks);
-void donate_priority (void);
-void is_cur_max_priority (void);
-
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);
@@ -148,17 +145,23 @@ void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
 void thread_set_priority (int);
-bool thread_less_func(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+/* Solution Code */
 bool compare_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+void thread_donate_priority(struct thread *t);
+void thread_hold_lock(struct lock *lock);
+void thread_remove_lock(struct lock *lock);
+bool lock_cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+void thread_update_priority(struct thread *t);
 
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
-     //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
-// int adv_sch_update_priority (fixed_point_t recent_cpu, int nice );
-// void adv_sch_inc_recent_cpu(void);
-// void adv_sch_update_recent_cpu_and_load_avg(void);
 
+/* Solution Code */
+/* For mlfqs */
+void mlfqs_inc_recent_cpu();
+void mlfqs_update_load_avg_and_recent_cpu();
+void mlfqs_update_priority();
 
 #endif /* threads/thread.h */

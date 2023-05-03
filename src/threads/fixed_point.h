@@ -1,49 +1,31 @@
+#ifndef __THREAD_FIXED_POINT_H
+#define __THREAD_FIXED_POINT_H
 
-    //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  Mariam and Nada $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$44
-
-#ifndef FIXED_POINT_ARITHMETIC_H
-#define FIXED_POINT_ARITHMETIC_H
-
-#include <stdint.h>
-
-// Define the fixed-point type as a 32-bit signed integer
-typedef int32_t fixed_point_t;
-
-// Define the scaling factor as a power of 2
-#define FIXED_POINT_SHIFT 14
-
-
-// Convert an integer n to fixed-point representation
-#define TO_FIXED_POINT(n) ((fixed_point_t)((n) << FIXED_POINT_SHIFT))
-
-// Convert a fixed-point value x to an integer (rounding towards zero)
-#define TO_INTEGER_ZERO(x) ((x) >> FIXED_POINT_SHIFT)
-
-// Convert a fixed-point value x to an integer (rounding to nearest)
-#define TO_INTEGER_NEAREST(x) (((x) >= 0) ? (((x) + (1 << (FIXED_POINT_SHIFT - 1))) >> FIXED_POINT_SHIFT) : (((x) - (1 << (FIXED_POINT_SHIFT - 1))) >> FIXED_POINT_SHIFT))
-
-// Add two fixed-point values x and y
-#define ADD(x, y) ((x) + (y))
-
-// Subtract a fixed-point value y from x
-#define SUBTRACT(x, y) ((x) - (y))
-
-// Add a fixed-point value x and an integer n
-#define ADD_INTEGER(x, n) ((x) + ((n) << FIXED_POINT_SHIFT))
-
-// Subtract an integer n from a fixed-point value x
-#define SUBTRACT_INTEGER(x, n) ((x) - ((n) << FIXED_POINT_SHIFT))
-
-// Multiply two fixed-point values x and y
-#define MULTIPLY(x, y) (((int64_t)(x) * (y)) >> FIXED_POINT_SHIFT)
-
-// Multiply a fixed-point value x by an integer n
-#define MULTIPLY_INTEGER(x, n) ((x) * (n))
-
-// Divide a fixed-point value x by a fixed-point value y
-#define DIVIDE(x, y) (((int64_t)(x) << FIXED_POINT_SHIFT) / (y))
-
-// Divide a fixed-point value x by an integer n
-#define DIVIDE_INTEGER(x, n) ((x) / (n))
-
-#endif // FIXED_POINT_ARITHMETIC_H
+/* Basic definitions of fixed point. */
+typedef int fixed_t;
+/* 16 LSB used for fractional part. */
+#define FP_SHIFT_AMOUNT 16
+/* Convert a value to a fixed-point value. */
+#define FP_CONST(A) ((fixed_t)(A << FP_SHIFT_AMOUNT))
+/* Add two fixed-point value. */
+#define FP_ADD(A,B) (A + B)
+/* Add a fixed-point value A and an int value B. */
+#define FP_ADD_MIX(A,B) (A + (B << FP_SHIFT_AMOUNT))
+/* Subtract two fixed-point value. */
+#define FP_SUB(A,B) (A - B)
+/* Subtract an int value B from a fixed-point value A. */
+#define FP_SUB_MIX(A,B) (A - (B << FP_SHIFT_AMOUNT))
+/* Multiply a fixed-point value A by an int value B. */
+#define FP_MULT_MIX(A,B) (A * B)
+/* Divide a fixed-point value A by an int value B. */
+#define FP_DIV_MIX(A,B) (A / B)
+/* Multiply two fixed-point value. */
+#define FP_MULT(A,B) ((fixed_t)(((int64_t) A) * B >> FP_SHIFT_AMOUNT))
+/* Divide two fixed-point value. */
+#define FP_DIV(A,B) ((fixed_t)((((int64_t) A) << FP_SHIFT_AMOUNT) / B))
+/* Get the integer part of a fixed-point value. */
+#define FP_INT_PART(A) (A >> FP_SHIFT_AMOUNT)
+/* Get the rounded integer of a fixed-point value. */
+#define FP_ROUND(A) (A >= 0 ? ((A + (1 << (FP_SHIFT_AMOUNT - 1))) >> FP_SHIFT_AMOUNT) \
+				: ((A - (1 << (FP_SHIFT_AMOUNT - 1))) >> FP_SHIFT_AMOUNT))
+#endif /* threads/fixed-point.h */
